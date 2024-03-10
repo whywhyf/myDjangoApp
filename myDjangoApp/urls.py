@@ -22,5 +22,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 
     # 返回obj文件
-    path("objData/", views.returnObjData)
+    path("objData/", views.returnObjData),
+
+    # 返回polydata 
+    path("polyData/", views.returnPolyData)
 ]
