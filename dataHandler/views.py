@@ -25,7 +25,7 @@ def returnObjData(request):
         return HttpResponse("File not found", status=404) 
 
 
-# 返回读入obj获得的polydata
+# 返回读入obj获得的polydata和json
 def returnPolyData(request):
     
     # 使用objImporter
@@ -51,9 +51,10 @@ def returnPolyData(request):
     objImporter.Update()
     actors = renderer.GetActors()
     actors.InitTraversal()
-    renWin.Render()
+    # renWin.Render()
     renderer.ResetCamera()
     # iren.Start()# 开启渲染窗口
+
     # 获取polydata
     polydata = vtk.vtkPolyData()
     actor = actors.GetNextActor()
@@ -62,7 +63,13 @@ def returnPolyData(request):
     # ren = vtk.vtkRenderer()
     polyDataString = polydata_to_string(polydata)
 
-    return JsonResponse({'message': '成功以string接收polydata', 'polydata': polyDataString})
+
+
+
+    # 读入json
+    with open('data/jsonData/00OMSZGW_lower.json', 'r') as file:  
+        labelData = json.load(file)  
+    return JsonResponse({'message': '成功以string接收polydata', 'polyData': polyDataString, 'labelData': labelData})
 
 
 # 将polydata对象转换为Base64编码的XML字符串，用于发送给前端
