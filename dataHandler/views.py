@@ -1,6 +1,10 @@
 from django.shortcuts import render, HttpResponse
 from django.http import JsonResponse 
 from django.http import FileResponse 
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+
+
 
 import os  
 import vtk
@@ -88,3 +92,18 @@ def polydata_to_string(polydata):
     base64_encoded = base64.b64encode(xml_string.encode()).decode()
     # base64_encoded = base64.b64encode(xml_string.encode())
     return base64_encoded
+
+
+# 保存收到的labeljson到本地
+@csrf_exempt
+def saveLabel(request):
+    if request.method == 'POST':  
+        json_data = json.loads(request.body)  # 从请求中获取 JSON 数据  
+        # 在这里可以将 JSON 数据保存在本地文件中，或者进行其他处理  
+        # 例如：  
+        with open('data/resultData/00OMSZGW_lower.json', 'w') as f:  
+            json.dump(json_data, f)  
+        print('labelData saved!')
+        return JsonResponse({'message': 'JSON data saved successfully'})  
+    else:  
+        return JsonResponse({'error': 'Invalid request method'}, status=405)  

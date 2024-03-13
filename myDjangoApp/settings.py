@@ -136,4 +136,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8082",
     "http://127.0.0.1:8082",
 ]
-
+CSRF_TRUSTED_ORIGINS = ['https://*.mydomain.com','http://localhost:8081']
+CSRF_COOKIE_SECURE = False
+# CORS_ALLOW_CREDENTIALS = True
+# CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_HEADERS = ['*']
+# 配置允许的请求方式
+# CORS_ALLOW_METHODS = ['*']

@@ -25,5 +25,8 @@ urlpatterns = [
     path("objData/", views.returnObjData),
 
     # 返回polydata 
-    path("polyData/", views.returnPolyData)
+    path("polyData/", views.returnPolyData),
+
+    # 保存label文件 
+    path("saveLabel/", views.saveLabel)
 ]
