@@ -10,7 +10,12 @@ import os
 import vtk
 import json  
 import base64
+import numpy as np
 
+from vtkmodules.util import numpy_support
+
+from .utils.utilsParseData import parse_polydata, polydata_to_string
+from .utils.utilsSegment import startSegment
 # Create your views here.
 # def returnObjData(request):
 #     return HttpResponse('nihao ')
@@ -35,7 +40,7 @@ def returnPolyData(request):
     # 使用objImporter
     objImporter = vtk.vtkOBJImporter()
     # 当前工作目录在项目根目录
-    objImporter.SetFileName('data/objData/00OMSZGW_lower.obj')
+    objImporter.SetFileName('data/objData/00OMSZGW/00OMSZGW/00OMSZGW_lower.obj')
     objImporter.Update()
     objImporter.InitializeObjectBase()
     objImporter.GetRenderer()
@@ -76,24 +81,6 @@ def returnPolyData(request):
     return JsonResponse({'message': '成功以string接收polydata', 'polyData': polyDataString, 'labelData': labelData})
 
 
-# 将polydata对象转换为Base64编码的XML字符串，用于发送给前端
-def polydata_to_string(polydata):
-    '''
-    将vtkPolyData对象转换为Base64编码的XML字符串，用于发送给前端。
-
-    :param polydata: vtkPolyData对象，包含要转换的数据。
-    :return: Base64编码的XML字符串。
-    '''
-    writer = vtk.vtkXMLPolyDataWriter()
-    writer.SetInputData(polydata)
-    writer.WriteToOutputStringOn()
-    writer.Write()
-    xml_string = writer.GetOutputString()
-    base64_encoded = base64.b64encode(xml_string.encode()).decode()
-    # base64_encoded = base64.b64encode(xml_string.encode())
-    return base64_encoded
-
-
 # 保存收到的labeljson到本地
 @csrf_exempt
 def saveLabel(request):
@@ -105,5 +92,94 @@ def saveLabel(request):
             json.dump(json_data, f)  
         print('labelData saved!')
         return JsonResponse({'message': 'JSON data saved successfully'})  
+    else:  
+        return JsonResponse({'error': 'Invalid request method'}, status=405)  
+    
+
+# todo 目前收到的polydata面是对的，点全部丢失 可以试试传坐标
+# 将收到的polydata保存为obj
+@csrf_exempt
+def savePolyDataAsObj(request):  
+    if request.method == 'POST':  
+        # polydata_as_string = request.FILES['polyData'].read().decode('utf-8')
+        # polydata = parse_polydata(polydata_as_string)
+        # # 例如：  
+        # # 使用objExporter
+        # print(polydata)
+        # objExporter = vtk.vtkOBJExporter()
+        # objExporter.SetFilePrefix('data/segObj/00OMSZGW_lower')
+        # mapper = vtk.vtkPolyDataMapper()
+        # mapper.SetInputData(polydata)
+        # actor = vtk.vtkActor()
+        # actor.SetMapper(mapper)
+        # actor.GetProperty().SetSpecular(.3) 
+        # actor.GetProperty().SetSpecularPower(30) 
+        # ren = vtk.vtkRenderer()
+        # ren.AddActor(actor)
+        # renWin = vtk.vtkRenderWindow()
+        # renWin.AddRenderer(ren)
+        # renWin.SetSize(1000, 1000)
+
+        # iren = vtk.vtkRenderWindowInteractor()
+        # iren.SetRenderWindow(renWin)
+        # iren.Initialize()
+        # renWin.Render()
+        # iren.Start()
+
+        # objExporter.SetInput(renWin)
+        # objExporter.Write()
+        print('start save')
+        json_data = json.loads(request.body) 
+        # print(json_data)
+        print(json_data['points'].keys())
+        print(json_data['polys'].keys())
+        pointsData = np.array(json_data['points']['values'])
+        # print(pointsData.shape)
+        
+        # NumPy_data_shape = pointsData.shape
+        # pointsData.reshape(int(pointsData.shape[0]/3), 3)
+        # VTK_pointsdata = numpy_support.numpy_to_vtk(num_array=pointsData, deep=True)
+        # pointsVtkdata = vtk.vtkDataArray({pointsData['values']})
+
+        polysData = np.array(json_data['polys']['values'])
+        # VTK_polysdata = numpy_support.numpy_to_vtk(num_array=polysData.ravel(), deep=True, array_type=vtk.VTK_FLOAT)
+
+        points = vtk.vtkPoints()
+        polys = vtk.vtkCellArray()
+        for i in range(int(pointsData.shape[0]/3)):
+            points.InsertNextPoint(pointsData[3*i], pointsData[3*i+1], pointsData[3*i+2])
+        for i in range(int(polysData.shape[0]/4)):
+            polys.InsertNextCell(polysData[4*i], [polysData[4*i+1], polysData[4*i+2], polysData[4*i+3]])
+        # points.SetData(VTK_pointsdata)
+        # polys.SetData(VTK_polysdata)
+        polyData = vtk.vtkPolyData()
+        polyData.SetPoints(points)
+        polyData.SetPolys(polys)
+
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputData(polyData)
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        ren = vtk.vtkRenderer()
+        ren.AddActor(actor)
+        renWin = vtk.vtkRenderWindow()
+        renWin.AddRenderer(ren)
+        # iren = vtk.vtkRenderWindowInteractor()
+        # iren.SetRenderWindow(renWin)
+        # iren.Initialize()
+        # renWin.Render()
+        # iren.Start()
+
+        objExporter = vtk.vtkOBJExporter()
+        objExporter.SetFilePrefix('data/segObj/00OMSZGW/00OMSZGW/00OMSZGW_lower')
+        objExporter.SetInput(renWin)
+        objExporter.Write()
+        startSegment('data/segObj/00OMSZGW/00OMSZGW/00OMSZGW_lower.obj')
+
+        with open('data/resultData/00OMSZGW/00OMSZGW_lower.json', 'r') as file:  
+            labelData = json.load(file)  
+
+        return JsonResponse({'message': 'poly data saved and seg successfully','labelData': labelData})  
     else:  
         return JsonResponse({'error': 'Invalid request method'}, status=405)  

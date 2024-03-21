@@ -28,5 +28,8 @@ urlpatterns = [
     path("polyData/", views.returnPolyData),
 
     # 保存label文件 
-    path("saveLabel/", views.saveLabel)
+    path("saveLabel/", views.saveLabel),
+
+    # 保存polydata为obj‘
+    path("saveObjandsegTooth/", views.savePolyDataAsObj),
 ]

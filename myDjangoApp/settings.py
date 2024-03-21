@@ -143,3 +143,4 @@ CSRF_COOKIE_SECURE = False
 # CORS_ALLOW_HEADERS = ['*']
 # 配置允许的请求方式
 # CORS_ALLOW_METHODS = ['*']
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB，或者您可以根据需求调整大小 
