@@ -135,8 +135,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8081",
     "http://localhost:8082",
     "http://127.0.0.1:8082",
+    'http://localhost:5066'
 ]
-CSRF_TRUSTED_ORIGINS = ['https://*.mydomain.com','http://localhost:8081']
+CSRF_TRUSTED_ORIGINS = ['https://*.mydomain.com','http://localhost:8081','http://localhost:5066']
 CSRF_COOKIE_SECURE = False
 # CORS_ALLOW_CREDENTIALS = True
 # CORS_ALLOW_ALL_ORIGINS = True

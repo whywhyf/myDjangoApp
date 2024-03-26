@@ -11,6 +11,8 @@ import vtk
 import json  
 import base64
 import numpy as np
+import asyncio
+import threading
 
 from vtkmodules.util import numpy_support
 
@@ -96,7 +98,7 @@ def saveLabel(request):
         return JsonResponse({'error': 'Invalid request method'}, status=405)  
     
 
-# todo 目前收到的polydata面是对的，点全部丢失 可以试试传坐标
+# done 目前收到的polydata面是对的，点全部丢失 可以试试传坐标
 # 将收到的polydata保存为obj
 @csrf_exempt
 def savePolyDataAsObj(request):  
@@ -175,7 +177,7 @@ def savePolyDataAsObj(request):
         objExporter.SetFilePrefix('data/segObj/00OMSZGW/00OMSZGW/00OMSZGW_lower')
         objExporter.SetInput(renWin)
         objExporter.Write()
-        startSegment('data/segObj/00OMSZGW/00OMSZGW/00OMSZGW_lower.obj')
+        startSegment('data/segObj/', id = '00OMSZGW')
 
         with open('data/resultData/00OMSZGW/00OMSZGW_lower.json', 'r') as file:  
             labelData = json.load(file)  
@@ -183,3 +185,80 @@ def savePolyDataAsObj(request):
         return JsonResponse({'message': 'poly data saved and seg successfully','labelData': labelData})  
     else:  
         return JsonResponse({'error': 'Invalid request method'}, status=405)  
+    
+
+# 接收分割请求并分割
+@csrf_exempt
+def segmentBothTooth(request):  
+    if request.method == 'POST':  
+
+        print('start save')
+        json_data = json.loads(request.body) 
+        print(json_data.keys())
+        print(json_data['upperPoints'].keys())
+        print(json_data['upperPolys'].keys())
+        id = json_data['id']
+        print('id:', id)
+
+        upperPointsData = np.array(json_data['upperPoints']['values'])
+        upperPolysData = np.array(json_data['upperPolys']['values'])
+        lowerPointsData = np.array(json_data['lowerPoints']['values'])
+        lowerPolysData = np.array(json_data['lowerPolys']['values'])
+
+        # 开启两个子线程分别保存上下牙
+        threadUpper = threading.Thread(target=convertToPolyData(upperPointsData, upperPolysData, id, 'upper'))
+        threadLower = threading.Thread(target=convertToPolyData(lowerPointsData, lowerPolysData, id, 'lower'))
+
+        threadUpper.start()
+        threadLower.start()
+
+        threadUpper.join()
+        threadLower.join()
+
+        # path = 'data/segData/id/id/id_teethtype/obj'
+        segPath = 'data/segObj/'
+        startSegment(segPath, id)
+        # openPath ='data/resultData/id/id_teethType.json'
+        openPath = 'data/resultData/'+id+'/'+id
+        with open(openPath+'_upper.json', 'r') as file:  
+            upperLabelData = json.load(file)  
+        with open(openPath+'_lower.json', 'r') as file:  
+            lowerLabelData = json.load(file)  
+
+        return JsonResponse({'message': 'both tooth saved successfully', 'upper': upperLabelData, 'lower': lowerLabelData})
+        # return JsonResponse({'message': 'poly data saved and seg successfully','labelData': labelData})  
+    else:  
+        return JsonResponse({'error': 'Invalid request method'}, status=405)  
+    
+#  done 用子线程分别完成两个保存
+@csrf_exempt
+def convertToPolyData(pointsData, polysData, id, teethType):
+        points = vtk.vtkPoints()
+        polys = vtk.vtkCellArray()
+        for i in range(int(pointsData.shape[0]/3)):
+            points.InsertNextPoint(pointsData[3*i], pointsData[3*i+1], pointsData[3*i+2])
+        for i in range(int(polysData.shape[0]/4)):
+            polys.InsertNextCell(polysData[4*i], [polysData[4*i+1], polysData[4*i+2], polysData[4*i+3]])
+
+        polyData = vtk.vtkPolyData()
+        polyData.SetPoints(points)
+        polyData.SetPolys(polys)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputData(polyData)
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        ren = vtk.vtkRenderer()
+        ren.AddActor(actor)
+        renWin = vtk.vtkRenderWindow()
+        renWin.AddRenderer(ren)
+
+        objExporter = vtk.vtkOBJExporter()
+        # filePrefix = 'data/segObj/id/id/id_teethType'
+        filePrefix = 'data/segObj/' + id + '/' + id + '/' + id + '_' + teethType
+        objExporter.SetFilePrefix(filePrefix)
+        objExporter.SetInput(renWin)
+        directory = 'data/segObj/' + id + '/' + id + '/'
+        if not os.path.exists(directory):  # 检查目录是否存在  
+            os.makedirs(directory)  # 如果目录不存在，则创建它 
+        objExporter.Write()

@@ -32,4 +32,7 @@ urlpatterns = [
 
     # 保存polydata为obj‘
     path("saveObjandsegTooth/", views.savePolyDataAsObj),
+
+    # 接收分割请求并分割
+    path("segmentBothTooth/", views.segmentBothTooth),
 ]
