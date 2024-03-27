@@ -217,7 +217,7 @@ def segmentBothTooth(request):
 
         # path = 'data/segData/id/id/id_teethtype/obj'
         segPath = 'data/segObj/'
-        startSegment(segPath, id)
+        # startSegment(segPath, id)
         # openPath ='data/resultData/id/id_teethType.json'
         openPath = 'data/resultData/'+id+'/'+id
         with open(openPath+'_upper.json', 'r') as file:  
@@ -234,9 +234,19 @@ def segmentBothTooth(request):
 @csrf_exempt
 def convertToPolyData(pointsData, polysData, id, teethType):
         points = vtk.vtkPoints()
-        polys = vtk.vtkCellArray()
-        for i in range(int(pointsData.shape[0]/3)):
-            points.InsertNextPoint(pointsData[3*i], pointsData[3*i+1], pointsData[3*i+2])
+        polys = vtk.vtkCellArray()          
+
+        third_elements = pointsData[2::3]  # 从索引为2的位置开始，每隔两个取一个元素  
+        max_z = max(third_elements)  # 找出第三位元素中的最大值 
+        min_z = min(third_elements)  # 找出第三位元素中的最小值
+        print('max_z:', max_z, 'min_z:', min_z)
+
+        if(teethType == 'upper'):
+            for i in range(int(pointsData.shape[0]/3)):
+                points.InsertNextPoint(pointsData[3*i], pointsData[3*i+1], max_z-(pointsData[3*i+2])+100)
+        elif(teethType == 'lower'):
+            for i in range(int(pointsData.shape[0]/3)):
+                points.InsertNextPoint(pointsData[3*i], pointsData[3*i+1], pointsData[3*i+2])
         for i in range(int(polysData.shape[0]/4)):
             polys.InsertNextCell(polysData[4*i], [polysData[4*i+1], polysData[4*i+2], polysData[4*i+3]])
 
@@ -262,3 +272,27 @@ def convertToPolyData(pointsData, polysData, id, teethType):
         if not os.path.exists(directory):  # 检查目录是否存在  
             os.makedirs(directory)  # 如果目录不存在，则创建它 
         objExporter.Write()
+
+
+# 保存收到的labeljson到本地 by id
+@csrf_exempt
+def saveLabelById(request):
+    if request.method == 'POST':  
+        json_data = json.loads(request.body)  # 从请求中获取 JSON 数据  
+        # 在这里可以将 JSON 数据保存在本地文件中，或者进行其他处理  
+        id = json_data['id'] 
+        type = json_data['type']
+        label = json_data['label']
+        savePath = 'data/refinedData/'+id+'/'
+        fileName = id+'_'+type+'.json'
+        if not os.path.exists(savePath):  # 检查目录是否存在 
+            try: 
+                os.makedirs(savePath)  # 如果目录不存在，则创建它 
+            except OSError:
+                print('文件已存在')
+        with open(savePath + fileName, 'w') as f:  
+            json.dump(json_data, f)  
+        print('labelData saved!')
+        return JsonResponse({'message': 'JSON data saved successfully'})  
+    else:  
+        return JsonResponse({'error': 'Invalid request method'}, status=405)  

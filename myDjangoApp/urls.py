@@ -35,4 +35,7 @@ urlpatterns = [
 
     # 接收分割请求并分割
     path("segmentBothTooth/", views.segmentBothTooth),
+
+    # 保存label文件 by id
+    path("saveLabelById/", views.saveLabelById),
 ]
