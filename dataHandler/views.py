@@ -243,7 +243,7 @@ def convertToPolyData(pointsData, polysData, id, teethType):
 
         if(teethType == 'upper'):
             for i in range(int(pointsData.shape[0]/3)):
-                points.InsertNextPoint(pointsData[3*i], pointsData[3*i+1], max_z-(pointsData[3*i+2])+100)
+                points.InsertNextPoint(-pointsData[3*i], pointsData[3*i+1], -pointsData[3*i+2])
         elif(teethType == 'lower'):
             for i in range(int(pointsData.shape[0]/3)):
                 points.InsertNextPoint(pointsData[3*i], pointsData[3*i+1], pointsData[3*i+2])
